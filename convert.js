@@ -12,6 +12,11 @@ async function convert() {
   let record = null;
 
   while (record = await cursor.next()) {
+    for (let key of Object.keys(record)) {
+    if (record[key] !== null && typeof record[key] === 'object') {
+      record[key] = JSON.stringify(record[key]);
+    }
+  }
     rows.push(record);
   }
   await reader.close();
