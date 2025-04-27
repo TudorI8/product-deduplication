@@ -10,6 +10,14 @@ function normalize(text) {
     .toLowerCase();
 }
 
+function cleanCell(value) {
+  const stringValue = String(value || '');
+  return `"${stringValue
+    .replace(/(\r\n|\n|\r)/g, ' ')
+    .replace(/"/g, '""')
+    .trim()}"`;
+}
+
 const products = [];
 fs.createReadStream('products.csv')
   .pipe(csv())
@@ -33,22 +41,25 @@ fs.createReadStream('products.csv')
     const outputFile = 'deduplicated_products.csv';
     const headers = Object.keys(uniqueProducts[0]);
     const writeStream = fs.createWriteStream(outputFile);
-    writeStream.write(headers.join(',') + '\n');
+    writeStream.write(headers.map((header) => cleanCell(header)).join(',') + '\n');
 
     uniqueProducts.forEach((product) => {
-      const row = headers.map((header) => product[header]).join(',');
+      const row = headers.map((header) => cleanCell(product[header])).join(',');
       writeStream.write(row + '\n');
     });
+
+    writeStream.end();
 
     let duplicatesFile = '';
     if (duplicates.length > 0) {
       duplicatesFile = 'duplicates_backup.csv';
       const dupStream = fs.createWriteStream(duplicatesFile);
-      dupStream.write(headers.join(',') + '\n');
+      dupStream.write(headers.map((header) => cleanCell(header)).join(',') + '\n');
       duplicates.forEach((product) => {
-        const row = headers.map((header) => product[header]).join(',');
+        const row = headers.map((header) => cleanCell(product[header])).join(',');
         dupStream.write(row + '\n');
       });
+      dupStream.end();
     }
 
     console.log(`✅ Deduplication complete. Processed: ${products.length}, Kept: ${uniqueProducts.length}, Duplicates: ${duplicates.length}${duplicatesFile ? `, Backup: '${duplicatesFile}'` : ''}`);
